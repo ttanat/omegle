@@ -1,0 +1,119 @@
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<link rel="stylesheet" href="/static/index.css">
+
+<div id="app">
+    <div>
+        <div style="display: inline-block"><h1>Omegle</h1></div>
+        <div id="num-online">{{ numOnline.toLocaleString() }} online now</div>
+    </div>
+    <div id="chat">
+        <div v-if="showStartScreen" id="start-screen">
+            <button @click="startChat" class="new-chat-btn">New Chat</button>
+        </div>
+        <template v-else>
+            <div v-for="message in messages">
+                <div v-if="message.sender" class="message">
+                    <span :style="{ 'color': message.sender === 'You' ? 'red' : 'blue' }">{{ message.sender }}:</span>&nbsp;<span>{{ message.content }}</span>
+                </div>
+                <div v-else class="message" style="color: darkgrey">{{ message.content }}</div>
+            </div>
+            <button v-if="!isInQueue && !isInChat" @click="startChat" class="new-chat-btn">New Chat</button>
+        </template>
+    </div>
+    <div id="controls">
+        <div>
+            <button @click="isInChat ? endChat() : startChat()" class="control" :disabled="isInQueue">
+                {{ isInQueue ? "Looking..." : isInChat ? "End" : "Start" }}
+            </button>
+        </div>
+        <div>
+            <form action="" @submit.prevent="sendMessage">
+                <input v-model.trim="message" class="control" type="text">
+                <button type="submit" class="control">Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref } = Vue
+
+    createApp({
+        setup() {
+            const numOnline = ref(0)
+
+            const showStartScreen = ref(true)
+
+            const message = ref("")
+            const messages = ref([])
+
+            const isInQueue = ref(false)
+            const isInChat = ref(false)
+
+            const ws = new WebSocket("/chat")
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data)
+                const { action } = data
+                if (action === "chat_started") {
+                    isInQueue.value = false
+                    isInChat.value = true
+                    messages.value = [{ sender: null, content: "Say hi to stranger!" }]
+                    updateNumOnline()
+                } else if (action === "message_received") {
+                    messages.value.push({ sender: "Stranger", content: data.message })
+                } else if (action === "chat_ended") {
+                    isInChat.value = false
+                    if (messages.value[messages.value.length - 1] !== null) {
+                        messages.value.push({ sender: null, content: "Stranger has left the chat." })
+                    }
+                    updateNumOnline()
+                } else if (action === "update_num_online") {
+                    numOnline.value = data.num_online
+                }
+            }
+            function updateNumOnline() {
+                ws.send(JSON.stringify({ action: "update_num_online" }))
+            }
+
+            function startChat() {
+                showStartScreen.value = false
+                if (isInQueue.value || isInChat.value) {
+                    return
+                }
+                isInQueue.value = true
+                messages.value = [{ sender: null, content: "Finding a stranger..." }]
+                ws.send(JSON.stringify({ action: "start_chat" }))
+            }
+            function sendMessage() {
+                if (isInChat.value && message.value.length > 0) {
+                    ws.send(JSON.stringify({
+                        action: "send_message",
+                        message: message.value,
+                    }))
+                    messages.value.push({ sender: "You", content: message.value })
+                    message.value = ""
+                }
+            }
+            function endChat() {
+                if (isInChat.value) {
+                    isInChat.value = false
+                    messages.value.push({ sender: null, content: "You left the chat." })
+                    ws.send(JSON.stringify({ action: "end_chat" }))
+                    updateNumOnline()
+                }
+            }
+
+            return {
+                numOnline,
+                showStartScreen,
+                message,
+                messages,
+                isInQueue,
+                isInChat,
+                startChat,
+                sendMessage,
+                endChat,
+            }
+        }
+    }).mount("#app")
+</script>

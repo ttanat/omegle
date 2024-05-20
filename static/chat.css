@@ -1,0 +1,38 @@
+#chat {
+    height: calc(100vh - 220px);
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border: 1px solid grey;
+    border-radius: 5px;
+    background: white;
+    padding: 10px;
+    overflow-wrap: break-word;
+    overflow-y: scroll;
+}
+.message {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+.new-chat-btn {
+    width: 150px;
+    height: 60px;
+    background: dodgerblue;
+    border-radius: 5px;
+    border: 1px solid darkgrey;
+    font-size: 20px;
+    color: white;
+    cursor: pointer;
+}
+.new-chat-btn:hover {
+    background: color-mix(in srgb, dodgerblue, black 5%);
+}
+.new-chat-btn:active {
+    background: color-mix(in srgb, dodgerblue, black 15%);
+}
+#start-screen {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

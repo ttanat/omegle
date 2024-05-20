@@ -1,0 +1,25 @@
+#controls {
+    width: 100%;
+    height: 60px;
+    background: lightgrey;
+}
+#controls > div {
+    display: inline-block;
+}
+#controls > :nth-child(2) {
+    width: calc(100% - 80px);
+}
+input.control {
+    margin-left: 10px;
+    margin-right: 10px;
+    width: calc(100% - 100px);
+}
+button.control {
+    width: 80px;
+    cursor: pointer;
+}
+.control {
+    height: 60px;
+    border-radius: 5px;
+    border: 1px solid darkgrey;
+}
