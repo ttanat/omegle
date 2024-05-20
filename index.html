@@ -6,14 +6,14 @@
         <div style="display: inline-block"><h1>Omegle</h1></div>
         <div id="num-online">{{ numOnline.toLocaleString() }} online now</div>
     </div>
-    <div id="chat">
+    <div id="chat" ref="chat">
         <div v-if="showStartScreen" id="start-screen">
             <button @click="startChat" class="new-chat-btn">New Chat</button>
         </div>
         <template v-else>
             <div v-for="message in messages">
                 <div v-if="message.sender" class="message">
-                    <span :style="{ 'color': message.sender === 'You' ? 'red' : 'blue' }">{{ message.sender }}:</span>&nbsp;<span>{{ message.content }}</span>
+                    <span :style="{ 'color': message.sender === 'You' ? 'red' : 'blue' }"><b>{{ message.sender }}:</b></span>&nbsp;<span>{{ message.content }}</span>
                 </div>
                 <div v-else class="message" style="color: darkgrey">{{ message.content }}</div>
             </div>
@@ -36,16 +36,23 @@
 </div>
 
 <script>
-    const { createApp, ref } = Vue
+    const { createApp, ref, onMounted, watch, nextTick } = Vue
 
     createApp({
         setup() {
             const numOnline = ref(0)
 
+            const chat = ref(null)
+            onMounted(() => {
+                chat.value.focus()
+            })
             const showStartScreen = ref(true)
-
             const message = ref("")
             const messages = ref([])
+            watch(() => messages, async (newValue, oldValue) => {
+                await nextTick() // Wait for DOM to update
+                chat.value.scrollTo(0, chat.value.scrollHeight) // Scroll to bottom of chat
+            }, { deep: true })
 
             const isInQueue = ref(false)
             const isInChat = ref(false)
@@ -64,7 +71,7 @@
                 } else if (action === "chat_ended") {
                     isInChat.value = false
                     if (messages.value[messages.value.length - 1] !== null) {
-                        messages.value.push({ sender: null, content: "Stranger has left the chat." })
+                        messages.value.push({ sender: null, content: "Stranger left the chat." })
                     }
                     updateNumOnline()
                 } else if (action === "update_num_online") {
@@ -83,6 +90,7 @@
                 isInQueue.value = true
                 messages.value = [{ sender: null, content: "Finding a stranger..." }]
                 ws.send(JSON.stringify({ action: "start_chat" }))
+                updateNumOnline()
             }
             function sendMessage() {
                 if (isInChat.value && message.value.length > 0) {
@@ -105,6 +113,7 @@
 
             return {
                 numOnline,
+                chat,
                 showStartScreen,
                 message,
                 messages,
